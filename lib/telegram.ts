@@ -1,0 +1,27 @@
+export async function sendOrderTelegramNotification(order: any) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    return;
+  }
+
+  const message = `
+Yangi buyurtma:
+№: ${order.orderNumber}
+Mijoz: ${order.customerName}
+Telefon: ${order.customerPhone}
+To'lov usuli: ${order.paymentMethod}
+Mahsulotlar: ${order.items.map((item: any) => `${item.product.name} x${item.quantity}`).join(", ")}
+Jami: ${order.totalPrice} so'm
+  `;
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: message
+    })
+  });
+}
