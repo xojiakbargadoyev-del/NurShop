@@ -1,12 +1,15 @@
-import type { NextAuthOptions } from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt"
+  },
+  pages: {
+    signIn: "/admin/login"
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -15,34 +18,41 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
+        const email = credentials.email.trim().toLowerCase();
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email }
         });
 
-        if (!user || !user.passwordHash) return null;
+        if (!user || !user.passwordHash) {
+          return null;
+        }
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const isValidPassword = await bcrypt.compare(
+          credentials.password,
+          user.passwordHash
+        );
 
-        if (!isValid) return null;
+        if (!isValidPassword) {
+          return null;
+        }
 
         return {
           id: user.id,
+          name: user.name ?? user.email,
           email: user.email,
-          name: user.name,
           role: user.role
         };
       }
     })
   ],
-  pages: {
-    signIn: "/admin/login"
-  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.role = (user as any).role;
       }
       return token;
     },
@@ -52,5 +62,9 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     }
-  }
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development"
 };
+
+export default NextAuth(authOptions);

@@ -1,42 +1,47 @@
-const stats = [
-  { label: "Umumiy daromad", value: "48.2 mln so‘m" },
-  { label: "Buyurtmalar", value: "124" },
-  { label: "Mijozlar", value: "3,480" },
-  { label: "Mahsulotlar", value: "350" }
-];
+"use client";
 
-const recentOrders = [
-  { id: "#1041", customer: "Zarina S", total: "1 560 000", status: "Yangi" },
-  { id: "#1042", customer: "Anvar T", total: "2 990 000", status: "Tasdiqlangan" },
-  { id: "#1043", customer: "Madina K", total: "420 000", status: "Tayyorlanmoqda" }
-];
+import { useEffect, useState } from "react";
 
 export default function AdminDashboardPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/orders")
+      .then((response) => response.json())
+      .then((data) => setOrders(data.orders || []))
+      .catch(() => setOrders([]));
+  }, []);
+
+  const totalRevenue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+  const pending = orders.filter((order) => order.status === "PENDING").length;
+  const delivered = orders.filter((order) => order.status === "DELIVERED").length;
+
   return (
-    <main className="p-8">
+    <main className="p-6 md:p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-blue-600">Dashboard</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">Umumiy ko‘rinish</h1>
         </div>
-        <button className="rounded-full bg-blue-600 px-5 py-3 font-medium text-white">Yangi buyurtma</button>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm text-slate-500">{stat.label}</p>
-            <p className="mt-3 text-3xl font-bold text-slate-900">{stat.value}</p>
-          </div>
-        ))}
+      <div className="grid gap-5 md:grid-cols-3">
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm text-slate-500">Umumiy daromad</p>
+          <p className="mt-3 text-3xl font-bold text-slate-900">{totalRevenue.toLocaleString("uz-UZ")} so‘m</p>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm text-slate-500">Yangi buyurtmalar</p>
+          <p className="mt-3 text-3xl font-bold text-slate-900">{pending}</p>
+        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm text-slate-500">Yetkazilgan</p>
+          <p className="mt-3 text-3xl font-bold text-slate-900">{delivered}</p>
+        </div>
       </div>
 
       <div className="mt-10 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Oxirgi buyurtmalar</h2>
-          <button className="text-sm font-medium text-blue-600">Barchasini ko‘rish</button>
-        </div>
-
+        <h2 className="mb-5 text-xl font-bold text-slate-900">Oxirgi buyurtmalar</h2>
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
@@ -48,11 +53,11 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {recentOrders.map((order) => (
+              {orders.slice(0, 8).map((order) => (
                 <tr key={order.id}>
-                  <td className="px-4 py-3 text-slate-900">{order.id}</td>
-                  <td className="px-4 py-3 text-slate-700">{order.customer}</td>
-                  <td className="px-4 py-3 text-slate-700">{order.total} so‘m</td>
+                  <td className="px-4 py-3 text-slate-900">{order.orderNumber}</td>
+                  <td className="px-4 py-3 text-slate-700">{order.customerName}</td>
+                  <td className="px-4 py-3 text-slate-700">{order.totalPrice.toLocaleString("uz-UZ")} so‘m</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">{order.status}</span></td>
                 </tr>
               ))}
